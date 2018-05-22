@@ -8,8 +8,7 @@ $adminlogin = "jaadmin"
 $password = "Password123!"   
 $startip = "0.0.0.0"  
 $endip = "255.255.255.255"
-$database = ("testdb1", "testdb2", "testdb3")
-Import-AzureRmContext -Path C:\Users\ja\Desktop\rustam.json
+Login-AzureRmAccount
 New-AzureRmResourceGroup -Name $resourcegroup -Location $location
 New-AzureRmStorageAccount -ResourceGroupName $resourcegroup -Name $storageaccount -SkuName Standard_LRS -Location $location
 Set-AzureRmCurrentStorageAccount -ResourceGroupName $resourcegroup -Name $storageaccount
