@@ -1,0 +1,302 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "jastaccType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    },
+    "jaVMName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "jaVMAdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "jaVMAdminPassword": {
+      "type": "securestring"
+    },
+    "jaVMWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "customscripts1": {
+      "type": "string",
+      "minLength": 5,
+      "metadata": {
+        "description": "First Custom Script."
+      }
+    },
+    "customscripts2": {
+      "type": "string",
+      "minLength": 5,
+      "metadata": {
+        "description": "Second Custome Script."
+      }
+    },
+    "foldername": {
+      "type": "string",
+      "minLength": 3,
+      "metadata": {
+        "description": "First param for Script."
+      }
+    },
+    "filename": {
+      "type": "string",
+      "minLength": 3,
+      "metadata": {
+        "description": "Second param Script."
+      }
+    },
+    "JaPublicIPDnsName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access _artifactsLocation"
+      }
+    }
+  },
+  "variables": {
+    "jastaccName": "[concat('jastacc', uniqueString(resourceGroup().id))]",
+    "jaVnetPrefix": "10.0.0.0/16",
+    "jaVnetSubnet1Name": "Subnet-1",
+    "jaVnetSubnet1Prefix": "10.0.0.0/24",
+    "jaVnetSubnet2Name": "Subnet-2",
+    "jaVnetSubnet2Prefix": "10.0.1.0/24",
+    "jaVMImagePublisher": "MicrosoftWindowsServer",
+    "jaVMImageOffer": "WindowsServer",
+    "jaVMOSDiskName": "jaVMOSDisk",
+    "jaVMVmSize": "Standard_D2_v2",
+    "jaVMVnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'jaVnet')]",
+    "jaVMSubnetRef": "[concat(variables('jaVMVnetID'), '/subnets/', variables('jaVnetSubnet1Name'))]",
+    "jaVMStorageAccountContainerName": "vhds",
+    "jaVMNicName": "[concat(parameters('jaVMName'), 'NetworkInterface')]",
+    "JaPublicIPName": "JaPublicIP",
+    "jaDSCArchiveFolder": "DSC",
+    "jaDSCArchiveFileName": "jaDSC.zip",
+    "jaScriptScriptFolder": "CustomScripts",
+    "jaScriptScriptFileName": "jaScript.ps1"},
+  "resources": [
+    {
+      "name": "[variables('jastaccName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-01-01",
+      "sku": {
+        "name": "[parameters('jastaccType')]"
+      },
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "jastacc"
+      },
+      "kind": "Storage"
+    },
+    {
+      "name": "jaVnet",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "jaVnet"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('jaVnetPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('jaVnetSubnet1Name')]",
+            "properties": {
+              "addressPrefix": "[variables('jaVnetSubnet1Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('jaVnetSubnet2Name')]",
+            "properties": {
+              "addressPrefix": "[variables('jaVnetSubnet2Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('jaVMNicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', 'jaVnet')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('JaPublicIPName'))]"
+      ],
+      "tags": {
+        "displayName": "jaVMNic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('jaVMSubnetRef')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('JaPublicIPName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('jaVMName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('jastaccName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('jaVMNicName'))]"
+      ],
+      "tags": {
+        "displayName": "jaVM"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('jaVMVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('jaVMName')]",
+          "adminUsername": "[parameters('jaVMAdminUsername')]",
+          "adminPassword": "[parameters('jaVMAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('jaVMImagePublisher')]",
+            "offer": "[variables('jaVMImageOffer')]",
+            "sku": "[parameters('jaVMWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "jaVMOSDisk",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts', variables('jastaccName')), '2016-01-01').primaryEndpoints.blob, variables('jaVMStorageAccountContainerName'), '/', variables('jaVMOSDiskName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('jaVMNicName'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "name": "Microsoft.Powershell.DSC",
+          "type": "extensions",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2016-03-30",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('jaVMName'))]"
+          ],
+          "tags": {
+            "displayName": "jaDSC"
+          },
+          "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.9",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "configuration": {
+                "url": "[concat(parameters('_artifactsLocation'), '/', variables('jaDSCArchiveFolder'), '/', variables('jaDSCArchiveFileName'))]",
+                "script": "jaDSC.ps1",
+                "function": "Main"
+              },
+              "configurationArguments": {
+                "nodeName": "[parameters('jaVMName')]",
+                "customscripts1": "[concat(parameters('_artifactsLocation'), '/', 'Scripts', '/', parameters('customscripts1'), parameters('_artifactsLocationSasToken'))]",
+                "customscripts2": "[concat(parameters('_artifactsLocation'), '/', 'Scripts', '/', parameters('customscripts2'), parameters('_artifactsLocationSasToken'))]"
+
+              }
+            },
+            "protectedSettings": {
+              "configurationUrlSasToken": "[parameters('_artifactsLocationSasToken')]"
+            }
+          }
+        },
+        {
+          "name": "jaScript",
+          "type": "extensions",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2016-03-30",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('jaVMName'))]",
+            "[resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('jaVMName'), 'Microsoft.Powershell.DSC')]"
+          ],
+          "tags": {
+            "displayName": "jaScript"
+          },
+          "properties": {
+            "publisher": "Microsoft.Compute",
+            "type": "CustomScriptExtension",
+            "typeHandlerVersion": "1.4",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[concat(parameters('_artifactsLocation'), '/', variables('jaScriptScriptFolder'), '/', variables('jaScriptScriptFileName'), parameters('_artifactsLocationSasToken'))]"
+              ],
+              "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('jaScriptScriptFolder'), '/', variables('jaScriptScriptFileName'), ' -foldername ', parameters('foldername'), ' -filename ', parameters('filename'))]"
+
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "[variables('JaPublicIPName')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "JaPublicIP"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('JaPublicIPDnsName')]"
+        }
+      }
+    }],
+  "outputs": {}
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "jaVMName": { "value": "japubvm001" },
+    "jaVMAdminUserName": { "value": "javidadm" },
+    "jaVMAdminPassword": { "value": "Password123!" },
+    "jaPublicIPDnsName": { "value": "janewvm001" },
+    "customscripts1": { "value": "script1.ps1" },
+    "customscripts2": { "value": "script2.ps1" },
+    "foldername": { "value": "mynewfolder" },
+    "filename": { "value": "javidnote.txt" }
+  }
+}
