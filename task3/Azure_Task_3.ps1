@@ -1,8 +1,5 @@
 param(
-    # Parameter help description
-    [Parameter(Mandatory = $true)]
     [string] $Profile
-
 )
 if ($Profile) {
     Import-AzureRmContext -Path $Profile
