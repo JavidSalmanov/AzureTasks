@@ -1,4 +1,4 @@
-﻿Import-AzureRmContext -Path C:\Users\ja\Desktop\rustam.json
+﻿Login-AzureRmAccount
 $resourcegroup = "JARG"
 $location = "westeurope"
 $storageaccunt = "jastorage007"
