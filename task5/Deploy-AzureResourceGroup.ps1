@@ -16,7 +16,7 @@ Param(
 try {
     [Microsoft.Azure.Common.Authentication.AzureSession]::ClientFactory.AddUserAgent("VSAzureTools-$UI$($host.name)".replace(' ','_'), '3.0.0')
 } catch { }
-Import-AzureRmContext -Path $HOME\Desktop\rustam.json
+Login-AzureRmAccount
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3
 
