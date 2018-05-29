@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "jaVMName": {
+      "value": "japubvm001"
+    },
+    "jaVMAdminUserName": {
+      "value": "javidadm"
+    },
+    "jaVMAdminPassword": {
+      "value": "Password123!"
+    },
+    "jaPublicIPDnsName": {
+      "value": "janewvm001"
+    },
+    "website1": {
+      "value": "site1.zip"
+    },
+    "website2": {
+      "value": "site2.zip"
+    }
+  }
+}
