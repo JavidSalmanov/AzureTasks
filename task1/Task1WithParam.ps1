@@ -1,4 +1,4 @@
-Login-AzureRmAccount
+ Login-AzureRmAccount
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory = $true)]
